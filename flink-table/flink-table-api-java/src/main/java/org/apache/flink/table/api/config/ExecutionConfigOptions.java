@@ -850,6 +850,13 @@ public class ExecutionConfigOptions {
                                                     + "get UIDs assigned explicitly. Thus, these pipelines can "
                                                     + "be arbitrarily moved around within the same topology without "
                                                     + "affecting the stable UIDs.")
+                                    .linebreak()
+                                    .text(
+                                            "This option does not apply to process table functions (PTFs). "
+                                                    + "A PTF that is called with the 'uid' argument, or that takes "
+                                                    + "a table with set semantics or a broadcast table, always uses "
+                                                    + "the 'uid' argument (by default the function name) as the UID "
+                                                    + "of its transformation, independent of this option.")
                                     .build());
 
     @Documentation.TableOption(execMode = Documentation.ExecMode.STREAMING)
