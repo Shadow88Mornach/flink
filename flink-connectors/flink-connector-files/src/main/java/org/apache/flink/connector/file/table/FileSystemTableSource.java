@@ -448,7 +448,10 @@ public class FileSystemTableSource extends AbstractFileSystemTable
                                 + ", incomplete partition spec: "
                                 + part);
             }
-            map.put(k, part.get(k));
+            // listPartitions() reports the default partition as null, but its directory is named
+            // after defaultPartName
+            final String value = part.get(k);
+            map.put(k, value == null ? defaultPartName : value);
         }
         return map;
     }

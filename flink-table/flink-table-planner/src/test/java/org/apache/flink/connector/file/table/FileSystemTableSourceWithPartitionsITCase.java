@@ -28,6 +28,7 @@ import org.apache.flink.types.Row;
 import org.apache.flink.util.CollectionUtil;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -91,6 +92,32 @@ class FileSystemTableSourceWithPartitionsITCase extends BatchTestBase {
 
         List<Row> actual = executeAndCollectResults("SELECT * FROM " + TABLE_NAME + " WHERE f0=1;");
         assertThat(actual).containsExactly(Row.of(1, 4, 7, 10, "part0.csv", 1));
+    }
+
+    @Test
+    void testNullPartitionWrittenBySink() throws Exception {
+        tEnv().createTable(
+                        TABLE_NAME,
+                        TableDescriptor.forConnector("filesystem")
+                                .schema(
+                                        Schema.newBuilder()
+                                                .column("id", DataTypes.INT())
+                                                .column("k", DataTypes.STRING())
+                                                .build())
+                                .format("testcsv")
+                                .option(FileSystemConnectorOptions.PATH, tempFolder.getPath())
+                                .partitionedBy("k")
+                                .build());
+        tEnv().executeSql(
+                        "INSERT INTO " + TABLE_NAME + " VALUES (1, CAST(NULL AS STRING)), (2, 'a')")
+                .await();
+
+        assertThat(executeAndCollectResults("SELECT * FROM " + TABLE_NAME))
+                .containsExactlyInAnyOrder(Row.of(1, null), Row.of(2, "a"));
+        assertThat(executeAndCollectResults("SELECT * FROM " + TABLE_NAME + " WHERE k IS NULL"))
+                .containsExactly(Row.of(1, null));
+        assertThat(executeAndCollectResults("SELECT * FROM " + TABLE_NAME + " WHERE k = 'a'"))
+                .containsExactly(Row.of(2, "a"));
     }
 
     private void writePartitionedTestFiles(Integer partitionCount) throws IOException {
